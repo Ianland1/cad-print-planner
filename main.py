@@ -1,5 +1,5 @@
 """A CAD and 3D printing project planner."""
-
+from drafter import add_website_css
 from dataclasses import dataclass
 from math import isfinite
 import sys
@@ -601,6 +601,22 @@ def help_page(
 # "emscripten" identifies Python running through Pyodide in the browser.
 # This avoids repeating the metadata updates that caused the red errors.
 if sys.platform != "emscripten":
+    add_website_css("""
+        #drafter-body-- {
+            background-color: #F1F5F9;
+            font-family: Arial, sans-serif;
+            color: #14243B;
+            padding: 24px;
+        }
+
+        #drafter-body-- h1 {
+            background-color: #14243B;
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+        }
+    """)
+
     set_site_information(
         author="Ian Land",
         description="A CAD and 3D printing project planner.",
