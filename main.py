@@ -43,11 +43,11 @@ def initial_state() -> State:
 def navigation() -> list:
     """Create links that appear on every page."""
     return [
-        Link("Dashboard", index),
-        Link("Projects", projects),
-        Link("Add project", add_project),
-        Link("Printer settings", settings),
-        Link("Help", help_page)
+        Link("Dashboard", index, style_margin_right="20px"),
+        Link("Projects", projects, style_margin_right="20px"),
+        Link("Add project", add_project, style_margin_right="20px"),
+        Link("Printer settings", settings, style_margin_right="20px"),
+        Link("Help", help_page),
     ]
 
 
