@@ -622,7 +622,6 @@ if sys.platform != "emscripten":
         description="A CAD and 3D printing project planner.",
         sources=[
             "Drafter documentation",
-            "ChatGPT/OpenAI Codex assistance; see AI conversations"
         ],
         planning="planning/design/Final-Project-Design-Ian-Land.docx",
         links=["https://github.com/ianland1126/First-Project"]
