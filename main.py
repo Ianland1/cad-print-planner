@@ -464,6 +464,8 @@ def detail(state: State) -> Page:
 
         fit_message,
 
+        Button("Add another project", add_project),
+
         Button("Edit project or status", edit_project),
 
         Button("Review deletion", confirm_delete)
