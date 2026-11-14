@@ -8,6 +8,20 @@ import unittest
 import main as app
 
 
+def page_items(result: app.Page) -> list:
+    """Read nested layout content so route assertions still check visible data."""
+    pending = list(result.content)
+    items = []
+    while pending:
+        item = pending.pop(0)
+        items.append(item)
+        if isinstance(item, (app.Aside, app.Nav, app.Main, app.Div, app.Paragraph)):
+            pending.extend(item.content)
+        elif isinstance(item, app.Label):
+            items.append(item.text)
+    return items
+
+
 class PlannerTests(unittest.TestCase):
     """Test routes, project changes, and printer-fit checks."""
 
@@ -27,7 +41,7 @@ class PlannerTests(unittest.TestCase):
         """Check the dashboard's counts and hours."""
         self.add()
         self.part.status = "Completed"
-        content = app.index(self.state).content
+        content = page_items(app.index(self.state))
 
         self.assertIn("Completed: 1", content)
         self.assertIn(
@@ -38,13 +52,13 @@ class PlannerTests(unittest.TestCase):
         """Check both empty and populated project lists."""
         self.assertIn(
             "No projects match. Add a project or change the filter.",
-            app.projects(self.state).content
+            page_items(app.projects(self.state))
         )
 
         self.add()
         self.assertIn(
             "0: Bracket | PLA | Planning",
-            app.projects(self.state).content
+            page_items(app.projects(self.state))
         )
 
     def test_apply_filter(self) -> None:
@@ -54,7 +68,7 @@ class PlannerTests(unittest.TestCase):
 
         self.assertEqual(self.state.status_filter, "Completed")
         self.assertNotIn(
-            "0: Bracket | PLA | Planning", result.content
+            "0: Bracket | PLA | Planning", page_items(result)
         )
 
         app.apply_filter(self.state, "Unknown")
@@ -63,7 +77,7 @@ class PlannerTests(unittest.TestCase):
     def test_add_project(self) -> None:
         """Opening the form should not create a project."""
         self.assertIn(
-            "Project name", app.add_project(self.state).content
+            "Project name", page_items(app.add_project(self.state))
         )
         self.assertEqual(self.state.projects, [])
 
@@ -117,19 +131,19 @@ class PlannerTests(unittest.TestCase):
 
         self.assertIn(
             "Fits the printer in the entered orientation.",
-            app.detail(self.state).content
+            page_items(app.detail(self.state))
         )
 
         self.part.length = 221
         self.assertIn(
             "Too large: at least one dimension exceeds the printer volume.",
-            app.detail(self.state).content
+            page_items(app.detail(self.state))
         )
 
     def test_edit_project(self) -> None:
         """Check that the edit form shows the existing name."""
         self.add()
-        content = app.edit_project(self.state).content
+        content = page_items(app.edit_project(self.state))
 
         # any returns True when at least one item matches.
         found_name = any(
@@ -163,7 +177,7 @@ class PlannerTests(unittest.TestCase):
         self.add()
 
         self.assertIn(
-            "Bracket", app.confirm_delete(self.state).content
+            "Bracket", page_items(app.confirm_delete(self.state))
         )
         self.assertEqual(len(self.state.projects), 1)
 
@@ -187,7 +201,7 @@ class PlannerTests(unittest.TestCase):
     def test_settings(self) -> None:
         """Check that printer settings fields are present."""
         self.assertIn(
-            "Length (mm)", app.settings(self.state).content
+            "Length (mm)", page_items(app.settings(self.state))
         )
 
     def test_save_settings(self) -> None:
@@ -212,7 +226,7 @@ class PlannerTests(unittest.TestCase):
         """Check that Help explains the fit check."""
         self.assertIn(
             "The fit check compares sizes without rotating the part.",
-            app.help_page(self.state).content
+            page_items(app.help_page(self.state))
         )
 
     def test_fit_boundaries(self) -> None:
@@ -240,7 +254,7 @@ class PlannerTests(unittest.TestCase):
         ]:
             self.assertIn(
                 "Select a project first.",
-                action(self.state).content
+                page_items(action(self.state))
             )
 
         app.update_project(

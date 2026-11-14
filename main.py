@@ -6,7 +6,8 @@ import sys
 
 from drafter import (
     Page, route, start_server, set_site_information,
-    Header, TextBox, TextArea, SelectBox, Button, Link
+    Header, TextBox, TextArea, SelectBox, Button, Link,
+    Aside, Nav, Main, Div, Paragraph, Label
 )
 
 
@@ -40,27 +41,65 @@ def initial_state() -> State:
     return State([], 220, 220, 250, "All", -1, "")
 
 
-def navigation() -> list:
-    """Create links that appear on every page."""
-    return [
-        Link("Dashboard", index, style_margin_right="20px"),
-        Link("Projects", projects, style_margin_right="20px"),
-        Link("Add project", add_project, style_margin_right="20px"),
-        Link("Printer settings", settings, style_margin_right="20px"),
-        Link("Help", help_page),
+def navigation(section: str) -> list:
+    """Create sidebar links and highlight the current section."""
+    destinations = [
+        ("Dashboard", index),
+        ("Projects", projects),
+        ("Add project", add_project),
+        ("Printer settings", settings),
+        ("Help", help_page),
     ]
+    links = []
+    for label, destination in destinations:
+        classes = ["planner-nav-link"]
+        if label == section:
+            classes.append("is-active")
+        links.append(Link(label, destination, classes=classes))
+    return links
 
 
-def page(state: State, title: str, content: list) -> Page:
-    """Add a heading, navigation, and feedback to a page."""
-    # The star adds the items from one list into another list.
+def page(
+    state: State, title: str, content: list, section: str = "Projects"
+) -> Page:
+    """Keep navigation in the sidebar and page content in the main panel."""
+    # Paragraphs keep each line of information separate instead of running
+    # together. Form components already provide their own grouping.
+    body = []
+    for item in content:
+        if isinstance(item, str):
+            body.append(Paragraph(item))
+        else:
+            body.append(item)
+
+    feedback = []
+    if state.message:
+        feedback.append(Paragraph(
+            state.message, classes=["planner-message"], role="status"
+        ))
+
+    # The star adds the items from one list into another component.
     return Page(state, [
-        Header("CAD & 3D Print Planner"),
-        *navigation(),
-        Header(title, level=2),
-        state.message,
-        *content
+        Aside(
+            Header("CAD & 3D Print Planner", level=2),
+            Paragraph("Plan your next print.", classes=["planner-tagline"]),
+            Nav(*navigation(section), aria_label="Main navigation"),
+            classes=["planner-sidebar"]
+        ),
+        Main(
+            Header(title, id="planner-page-title"),
+            *feedback,
+            Div(*body, classes=["planner-content"]),
+            id="planner-main", aria_labelledby="planner-page-title"
+        )
     ])
+
+
+def field(label: str, component) -> Div:
+    """Keep a form label and its input together, including on small screens."""
+    return Div(
+        Label(label, for_id=component), component, classes=["planner-field"]
+    )
 
 
 def positive_number(text: str) -> float:
@@ -95,37 +134,24 @@ def selected(state: State) -> bool:
 def project_form(project: Project) -> list:
     """Create the fields used to add or edit a project."""
     return [
-        "Project name",
-        TextBox("name", project.name),
-
-        "Length (mm)",
-        TextBox("length", str(project.length)),
-
-        "Width (mm)",
-        TextBox("width", str(project.width)),
-
-        "Height (mm)",
-        TextBox("height", str(project.height)),
-
-        "Material",
-        SelectBox(
+        field("Project name", TextBox("name", project.name)),
+        field("Length (mm)", TextBox("length", str(project.length))),
+        field("Width (mm)", TextBox("width", str(project.width))),
+        field("Height (mm)", TextBox("height", str(project.height))),
+        field("Material", SelectBox(
             "material",
             ["PLA", "PETG", "ABS", "TPU"],
             project.material
+        )),
+        field(
+            "Estimated print time (hours)", TextBox("hours", str(project.hours))
         ),
-
-        "Estimated print time (hours)",
-        TextBox("hours", str(project.hours)),
-
-        "Status",
-        SelectBox(
+        field("Status", SelectBox(
             "status",
             ["Planning", "Ready to Print", "Completed"],
             project.status
-        ),
-
-        "Notes",
-        TextArea("notes", project.notes)
+        )),
+        field("Notes", TextArea("notes", project.notes))
     ]
 
 
@@ -177,7 +203,7 @@ def index(
         + str(state.printer_height) + " mm",
 
         "Projects are kept in this session, not a permanent database."
-    ])
+    ], section="Dashboard")
 
 
 @route
@@ -198,13 +224,12 @@ def projects(
     project_number: str = ""
 ) -> Page:
     """Show projects that match the saved status filter."""
-    content = [
-        "Filter by status",
-        SelectBox(
+    content: list = [
+        field("Filter by status", SelectBox(
             "status_filter",
             ["All", "Planning", "Ready to Print", "Completed"],
             state.status_filter
-        ),
+        )),
         Button("Apply filter", apply_filter)
     ]
 
@@ -229,8 +254,10 @@ def projects(
         )
     else:
         content += [
-            "Choose the project number shown above",
-            SelectBox("project_number", options),
+            field(
+                "Choose the project number shown above",
+                SelectBox("project_number", options)
+            ),
             Button("Open project", open_project)
         ]
 
@@ -281,7 +308,8 @@ def add_project(
         state,
         "Add a project",
         project_form(blank)
-        + [Button("Save new project", save_project)]
+        + [Button("Save new project", save_project)],
+        section="Add project"
     )
 
 
@@ -373,7 +401,8 @@ def store_project(
     return page(
         state,
         "Correct project details",
-        project_form(part) + [Button("Save project", action)]
+        project_form(part) + [Button("Save project", action)],
+        section="Projects" if editing else "Add project"
     )
 
 
@@ -525,17 +554,12 @@ def settings(
     return page(state, "Printer settings", [
         "Use the usable build volume from your printer documentation.",
 
-        "Length (mm)",
-        TextBox("printer_length", str(state.printer_length)),
-
-        "Width (mm)",
-        TextBox("printer_width", str(state.printer_width)),
-
-        "Height (mm)",
-        TextBox("printer_height", str(state.printer_height)),
+        field("Length (mm)", TextBox("printer_length", str(state.printer_length))),
+        field("Width (mm)", TextBox("printer_width", str(state.printer_width))),
+        field("Height (mm)", TextBox("printer_height", str(state.printer_height))),
 
         Button("Save printer settings", save_settings)
-    ])
+    ], section="Printer settings")
 
 
 @route
@@ -593,24 +617,225 @@ def help_page(
         "It does not account for supports, adhesion, or clearances.",
         "Print time is your estimate from a slicer.",
         "Projects are session data. Keep important information elsewhere."
-    ])
+    ], section="Help")
 
 
 # Drafter runs this file on the computer and again in the browser.
 # Register the CSS in both places so it survives Pyodide initialization.
 add_website_css("""
-    #drafter-body-- {
+    body {
+        margin: 0;
         background-color: #F1F5F9;
-        font-family: Arial, sans-serif;
-        color: #14243B;
-        padding: 24px;
     }
 
-    #drafter-body-- h1 {
+    #drafter-body-- {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        align-items: start;
+        gap: 28px;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 1440px;
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 24px;
+        background-color: #F1F5F9;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #14243B;
+    }
+
+    #drafter-body-- * {
+        box-sizing: border-box;
+    }
+
+    #drafter-body-- .planner-sidebar {
+        position: sticky;
+        top: 24px;
+        min-height: calc(100vh - 48px);
+        padding: 28px 18px;
         background-color: #14243B;
         color: white;
-        padding: 24px;
-        border-radius: 12px;
+        border-radius: 16px;
+    }
+
+    #drafter-body-- .planner-sidebar h2 {
+        margin: 0 10px;
+        font-size: 23px;
+        line-height: 1.35;
+        color: white;
+    }
+
+    #drafter-body-- .planner-tagline {
+        margin: 12px 10px 32px;
+        color: #BDCCE1;
+        font-size: 14px;
+    }
+
+    #drafter-body-- nav {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #drafter-body-- .planner-nav-link {
+        display: block;
+        margin: 0;
+        padding: 12px 16px;
+        border-radius: 8px;
+        color: #E2E8F0;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    #drafter-body-- .planner-nav-link:hover {
+        background-color: #243A56;
+        color: white;
+    }
+
+    #drafter-body-- .planner-nav-link.is-active {
+        background-color: #2563EB;
+        color: white;
+    }
+
+    #drafter-body-- a:focus-visible,
+    #drafter-body-- button:focus-visible,
+    #drafter-body-- input:focus-visible,
+    #drafter-body-- select:focus-visible,
+    #drafter-body-- textarea:focus-visible {
+        outline: 3px solid #60A5FA;
+        outline-offset: 3px;
+    }
+
+    #drafter-body-- #planner-main {
+        min-width: 0;
+        min-height: calc(100vh - 48px);
+        padding: 36px;
+        background-color: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        overflow-wrap: anywhere;
+    }
+
+    #drafter-body-- #planner-main h1 {
+        margin: 0 0 28px;
+        padding: 0 0 20px;
+        border-bottom: 1px solid #E2E8F0;
+        color: #14243B;
+        /* Override the default Drafter theme's important heading sizes. */
+        font-size: 32px !important;
+        line-height: 1.25 !important;
+        letter-spacing: normal !important;
+    }
+
+    #drafter-body-- .planner-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
+    }
+
+    #drafter-body-- .planner-content p {
+        margin: 0;
+    }
+
+    #drafter-body-- .planner-field {
+        width: 100%;
+        max-width: 560px;
+    }
+
+    #drafter-body-- .planner-field label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    #drafter-body-- .planner-field input,
+    #drafter-body-- .planner-field select,
+    #drafter-body-- .planner-field textarea {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid #CBD5E1;
+        border-radius: 8px;
+        background-color: white;
+        color: #14243B;
+        font: inherit;
+    }
+
+    #drafter-body-- .planner-field textarea {
+        min-height: 110px;
+        resize: vertical;
+    }
+
+    #drafter-body-- #planner-main button {
+        max-width: 100%;
+        margin: 0;
+        padding: 11px 18px;
+        border: 0;
+        border-radius: 8px;
+        background-color: #2563EB;
+        color: white;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    #drafter-body-- #planner-main button:hover {
+        background-color: #1D4ED8;
+    }
+
+    #drafter-body-- .planner-message {
+        margin: 0 0 24px;
+        padding: 12px 16px;
+        border-left: 4px solid #2563EB;
+        border-radius: 6px;
+        background-color: #EFF6FF;
+    }
+
+    @media (max-width: 700px) {
+        #drafter-body-- {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 16px;
+            padding: 16px;
+        }
+
+        #drafter-body-- .planner-sidebar {
+            position: static;
+            min-height: 0;
+            padding: 20px 16px;
+        }
+
+        #drafter-body-- .planner-sidebar h2 {
+            font-size: 21px;
+        }
+
+        #drafter-body-- .planner-tagline {
+            margin-bottom: 20px;
+        }
+
+        #drafter-body-- nav {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        #drafter-body-- .planner-nav-link {
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        #drafter-body-- #planner-main {
+            min-height: 0;
+            padding: 24px 20px;
+        }
+
+        #drafter-body-- #planner-main h1 {
+            font-size: 28px !important;
+        }
     }
 """)
 
