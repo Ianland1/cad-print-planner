@@ -597,34 +597,35 @@ def help_page(
 
 
 # Drafter runs this file on the computer and again in the browser.
+# Register the CSS in both places so it survives Pyodide initialization.
+add_website_css("""
+    #drafter-body-- {
+        background-color: #F1F5F9;
+        font-family: Arial, sans-serif;
+        color: #14243B;
+        padding: 24px;
+    }
+
+    #drafter-body-- h1 {
+        background-color: #14243B;
+        color: white;
+        padding: 24px;
+        border-radius: 12px;
+    }
+""")
+
 # Set the site information during the computer's build step only.
 # "emscripten" identifies Python running through Pyodide in the browser.
 # This avoids repeating the metadata updates that caused the red errors.
 if sys.platform != "emscripten":
-    add_website_css("""
-        #drafter-body-- {
-            background-color: #F1F5F9;
-            font-family: Arial, sans-serif;
-            color: #14243B;
-            padding: 24px;
-        }
-
-        #drafter-body-- h1 {
-            background-color: #14243B;
-            color: white;
-            padding: 24px;
-            border-radius: 12px;
-        }
-    """)
-
     set_site_information(
         author="Ian Land",
         description="A CAD and 3D printing project planner.",
         sources=[
             "Drafter documentation",
         ],
-        planning="planning/design/Final-Project-Design-Ian-Land.docx",
-        links=["https://github.com/ianland1126/First-Project"]
+        planning="Copy of CS1 Final Project 1_ Design (1).docx",
+        links=["https://github.com/Ianland1/cad-print-planner"]
     )
 
 
