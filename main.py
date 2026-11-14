@@ -627,7 +627,16 @@ def help_page(
 add_website_css("""
     body {
         margin: 0;
-        background-color: #F1F5F9;
+        background-color: #0B2545;
+        /* Local CAD linework sits over major and minor blueprint grid lines. */
+        background-image:
+            url("blueprint-background.svg"),
+            linear-gradient(rgba(174, 214, 255, 0.14) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(174, 214, 255, 0.14) 1px, transparent 1px),
+            linear-gradient(rgba(174, 214, 255, 0.055) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(174, 214, 255, 0.055) 1px, transparent 1px);
+        background-size: 1440px 1000px, 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+        background-position: center top, 0 0, 0 0, 0 0, 0 0;
     }
 
     #drafter-body-- {
@@ -641,7 +650,7 @@ add_website_css("""
         min-height: 100vh;
         margin: 0 auto;
         padding: 24px;
-        background-color: #F1F5F9;
+        background-color: transparent;
         font-family: Arial, sans-serif;
         font-size: 16px;
         line-height: 1.6;
@@ -657,9 +666,11 @@ add_website_css("""
         top: 24px;
         min-height: calc(100vh - 48px);
         padding: 28px 18px;
-        background-color: #14243B;
+        background-color: rgba(12, 31, 54, 0.96);
         color: white;
+        border: 1px solid rgba(174, 214, 255, 0.25);
         border-radius: 16px;
+        box-shadow: 0 12px 36px rgba(2, 12, 27, 0.2);
     }
 
     #drafter-body-- .planner-sidebar h2 {
@@ -714,9 +725,10 @@ add_website_css("""
         min-width: 0;
         min-height: calc(100vh - 48px);
         padding: 36px;
-        background-color: white;
-        border: 1px solid #E2E8F0;
+        background-color: #FAFDFF;
+        border: 1px solid #C9DDF0;
         border-radius: 16px;
+        box-shadow: 0 12px 36px rgba(2, 12, 27, 0.2);
         overflow-wrap: anywhere;
     }
 
